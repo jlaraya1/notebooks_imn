@@ -1,0 +1,147 @@
+---
+title: "Tutorial de relleno de datos usando ePCA"
+
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+ 
+author: "Jose Luis Araya, PhD"
+date: "December 19, 2019"
+output: html_document
+---
+## Departamento de Redes y Procesamiento de Datos 
+##Instituto Meteorológico Nacional 
+##Dr. José Luis Araya López
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#TUTORIAL 3
+
+
+```
+rm(list = ls())
+```
+
+Los paquetes a utilizar son:
+
+```
+#####Packages#####
+library(corrplot)
+library(FactoMineR)
+library(missMDA)
+library(relimp, pos = 4)
+library(paran)
+##################
+```
+Debe de cargar las funciones dadas anteriormente.
+Se define ahora el cuerpo principal del script:
+
+
+
+```
+ruta<-"/home/jlaraya/Documents/BaseEspejo/reportesDiariosYMensuales/grupos_datos/"
+setwd(ruta)
+files=dir()
+files=selectSomeFiles(files,1,8,"Rellenar",".txt") 
+
+resol="mensuales"
+npc_seleccion=1
+
+strt=Sys.time()
+for (i in seq(1,length(files))){ #Rellenado usando ePCA
+                                 #for (i in c(46)){ #Rellenado usando ePCA
+                                 strt2=Sys.time()
+                                 print(files[i])
+                                 dat=read.table(files[i],header=TRUE)
+                                 sequ=NULL;for(jj in seq(1,ncol(dat))){x=strsplit(names(dat)[jj],"_")[[1]][1];sequ=append(sequ,x)}
+                                 fechas=dat[,which(sequ!="h")]
+                                 #fechas2=subset(dat2,select=HORA:AGNO)
+                                 dat=dat[,which(sequ=="h")]
+                                 w=acotandoDatos(fechas,dat,100,30)
+                                 ia=w$ia;w$ia=NULL
+                                 fechas2=w[,which(sequ!="h")]
+                                 dat=w[,which(sequ=="h")]
+                                 if(ncol(dat)==ncol(fechas2)){print("OJO:no hay columnas con datos");next}
+
+                                 #Cálculo de la varianza acumulada para los reportes
+                                 res.comp_0 <- as.data.frame(imputePCA(dat,ncp=round(ncol(dat)/2,0),maxiter = 3000))
+                                 res.comp_0=res.comp_0[,1:ncol(dat)]
+                                 a=prcomp(res.comp_0, center=TRUE,scale = TRUE)
+                                 eigenvalues=(a$sdev)^2
+                                 perVar=as.data.frame(t(summary(a)$importance))
+                                 names(perVar)=c("standard_dev","proportion_variance","cumulative_proportion")
+                                 perVar=round(perVar,2)
+                                 perVar$no_eig=seq(1,nrow(perVar))
+                                 
+                                 
+                                 if(npc_seleccion==1){
+                                   #METODO 1: Calculando el número de PCs:
+                                   nb <- estim_ncpPCA(dat,ncp.max=ncol(dat),method.cv = "gcv",threshold=0.01)## Time consuming, nb = 2
+                                 }
+                                 
+                                 if(npc_seleccion==3){
+                                 #Método 3
+                                
+                                  #uso este número de cp afinado para la imputación final:
+                                  #datos "rellenar_datos_closeStat_r=60h_100_643.txt" 
+                                  #es un caso interesante donde no se selecciona bien el total de pcas
+                                 res.comp_0 <- as.data.frame(imputePCA(dat,ncp=round(ncol(dat)/2,0),maxiter = 3000))
+                                 res.comp_0=res.comp_0[,1:ncol(dat)] 
+                                 npcRep=paran(res.comp_0, iterations = 5000, centile = 0, quietly = FALSE, 
+                                       status = TRUE, all = TRUE, cfa = TRUE, graph = TRUE, color = TRUE, 
+                                       col = c("black", "red", "blue"), lty = c(1, 2, 3), lwd = 1, legend = TRUE, 
+                                       file = paste("parallel_analysis_",strsplit(files[i],".txt")[[1]][1],sep=""), width = 640, height = 640, grdevice = png, seed = 0)
+                                 nb=NULL;nb$ncp=npcRep$Retained
+                                 
+                                 if(nb$ncp>round(0.75*ncol(dat),0)){perVar2=subset(perVar,proportion_variance>0);nb$ncp=nrow(perVar2)}
+                            
+                                 }
+                                 
+                                 
+                               
+                                 pVar=round(cumsum(eigenvalues/sum(eigenvalues)*100)[nb$ncp],2)
+                                 res.comp <- as.data.frame(imputePCA(dat,ncp=nb$ncp,maxiter = 3000))
+                                 res.comp2=res.comp[,1:ncol(dat)] #valores rellenados
+                                 IE=is.na(dat)*-12
+                                 res.comp.final=res.comp[,1]
+                                 res.comp.fitted=res.comp[,(ncol(dat)+1):ncol(res.comp )] #valores estimados
+                                 res.comp.fitted=res.comp.fitted[,1]
+                                 residuos=res.comp.fitted-res.comp.final
+                                 
+                                 duracion=round(as.numeric(Sys.time()-strt2),2)
+                                 datosRellenados=as.data.frame(cbind(fechas2,duracion,nfilas=nrow(dat),ncol=ncol(dat),ref_station=names(dat)[1],number_pc=nb$ncp,pVar,sinRelleno=dat[,1],conRelleno=res.comp.final,estimados=res.comp.fitted,residuos,IE=IE[,1],IA=ia))
+                                 #coloreo
+                                 i_mx=which(datosRellenados$conRelleno>max(datosRellenados$sinRelleno,na.rm=TRUE))
+                                 datosRellenados$conRelleno[i_mx]=max(datosRellenados$sinRelleno,na.rm=TRUE)
+                                 i_mn=which(datosRellenados$conRelleno<min(datosRellenados$sinRelleno,na.rm=TRUE))
+                                 datosRellenados$conRelleno[i_mn]=min(datosRellenados$sinRelleno,na.rm=TRUE)
+                                 
+                                 # Corrección tardía: los residuos calculados a partir de datos faltantes no tienen sentido: se eliminan
+                                 s=which(is.na(datosRellenados$sinRelleno))
+                                 datosRellenados$residuos[s]=NA
+                                 
+                                 write.table(datosRellenados,quote=FALSE,file=paste("datosRellenados", names(dat)[1], ".txt",sep="_"))
+                                 #write.table(res.pca$var$cor,quote=FALSE,file=paste("correlaciones", names(dat)[1], ".txt",sep="_"))
+                                 #write.table(res.pca$eig,quote=FALSE,file=paste("eigenvalues", names(dat)[1], ".txt",sep="_"))
+                                 dat$residuos=NULL
+                                 plottingFilledData(paste("graficos_relleno", names(dat)[1], ".pdf",sep="_"),dat,res.comp2,"pdf")
+                                 plottingFilledData(paste("graficos_relleno_referencia", names(dat[1]), ".png",sep="_"),datosRellenados$sinRelleno,datosRellenados$conRelleno,"png")
+                                 pdf(paste("boxplots_relleno", names(dat)[1], ".pdf",sep="_"))
+                                 if(npc_seleccion==2){screeplot(a,type="lines",col="red",main=files[i])}
+                                 res.pca <- PCA(res.comp2)
+                                 biplot(a,cex=c(1,0.6),main=files[i])
+                                 boxplot(dat,res.comp2,las = 2,col=c("yellow","red"),ylim=c(min(res.comp2),max(res.comp2)),cex=0.2,cex.lab=1.0,cex.axis=0.75,main="Comparación de datos",xlab="",ylab="Parámetro Meteorológico")
+                                 legend("topright", legend=c("Antes de rellenar", "Después de rellenar"),col=c("red", "yellow"), lty=1:2, cex=0.8)
+                                 dev.off()
+                                 }
+  
+  
+print("**************")
+print(Sys.time()-strt)
+```
+
+
+

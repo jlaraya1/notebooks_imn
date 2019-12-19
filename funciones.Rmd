@@ -1,0 +1,711 @@
+---
+title: "Funciones"
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+ 
+author: "Jose Luis Araya, PhD"
+date: "December 19, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+#TUTORIAL 2
+
+
+Funcion para ingresar lineas de caracteres desde
+la consola. Convierte entrada a línea de caracteres:
+
+```
+ingresar<- function(comentario) {
+
+  print("=======================================")
+  comentario<-as.character(comentario)
+  print(comentario)
+  lineaCaracteres<-scan(n=1,what="character")
+  
+}
+```
+
+
+Obciones para elegir el parámetro meteorológico a analizar
+
+```
+menu <- function(arg=0) {
+  #Datos mensuales:
+  print("=================================================")
+  print("NOTA:los nombres de los archivos de entrada deben comenzar con prefijo separado por _    ej.lluvH_81005.txt")
+  print("ELIJA LA OPCIÓN QUE CORRESPONDE:")
+  print("1: Temperaturas horarias de automáticas")
+  print("11: Temperaturas horarias de mecánicas")
+  print("2: humedades relativas horarias de automáticas")
+  print("22: humedades relativas horarias de mecánicas")
+  print("3: flujo de irradiancia horaria de automáticas")
+  print("33: flujo de irradiancia horaria de automáticas")
+  print("4: lluvia horaria de automáticas")
+  print("44: lluvia horaria de mecánicas")
+  print("5: viento horario de automáticas")
+  print("55: viento horario de mecánicas")
+  print("=================================================")
+  opcion<-ingresar("Entre opción de datos cuyos reportes desea generar:")
+  opcion<-opcion
+}
+```
+ Esta funcion toma datos separados por algun caracter tales como
+
+   69,633,01/01/2013,100,22.84
+   y los convierte a algo como:
+   
+   | Cuenca  |     Número    |  Día | Mes | Año | Hora | Parámetro meteorológico
+|----------|:-----------:|------:|------:|------:|------:|------:|------:|
+| 69 | 633 | 2 | 1 | 1 | 2013 | 22.44 |
+
+   
+  Los argumentos de la función:<br/>
+  files:conjunto de archivos en carpeta "datos"<br/>
+  caracter_separador: el caracter de separación original de los archivos listados en "files" <br/>
+  guardeEn: la ruta donde se guardará el resultado <br/>
+
+```
+cambiando_separadores<- function(files,caracter_separador,guardeEn) {
+  
+  
+  
+  for (i in seq(1,length(files))){datos<-read.table(files[i],sep=caracter_separador,fill=TRUE,blank.lines.skip=F)
+                                  names(datos)=encab
+                                  fecha2=as.Date(as.character(datos$FECHA), "%d/%m/%Y")
+                                  dia=as.numeric(strftime(fecha2,"%d"))
+                                  mes= as.numeric(strftime(fecha2,"%m"))
+                                  agno=as.numeric(strftime(fecha2,"%Y"))
+                                  datos$DIA=dia;datos$MES=mes;datos$AGNO=agno;datos$fecha=NULL
+                                  datos$CUENCA=as.numeric(as.character(datos$CUENCA))
+                                  datos$ESTACION=as.numeric(as.character(datos$ESTACION))
+                                  datos$HORA=as.numeric(as.character(datos$HORA))/100
+                                  datos=subset(datos,select=c("CUENCA","ESTACION","HORA","DIA","MES","AGNO","DATOS" ))
+                                  write.table(as.data.frame(datos), file=paste(guardeEn,strsplit(files[i],".csv")[[1]][1],sep=""),row.names = F,col.names=TRUE)
+                                  }
+                                }
+
+as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
+```
+
+ 
+data1 and data2 most have the following format:<br/>
+ year month day hour level<br/>
+ 
+  | redond  |     year    |  month | day | hour | min | sec  | par |
+  |----------|:-----------:|------:|------:|------:|------:|------:|
+  |2013     |10   |11     |9    |0    |0  |316 |
+  |2013     |10   |11     |8   |59    |0  |316 |
+  |2013     |10   |11     |8   |58    |0  |316 |
+
+
+
+```
+ordering<-function(dat){
+ 
+  Fechas<-paste(as.character(dat$AGNO),"-",as.character(dat$MES),"-",as.character(dat$DIA),"-",as.character(dat$HORA),"-00-00")
+  Fechas <- ymd_hms(Fechas)
+  redond<-floor_date(Fechas,"hour")
+  print(min(redond))
+  print(max(redond))
+  dat<-data.frame(cbind(redond,dat))
+  dat<- dat[order(dat$redond),]
+  return(dat)
+  
+}
+
+```
+
+
+
+```
+separe_series<-function(archivo){myData<- myData <-read.table(archivo,header=TRUE)
+                                 CUEST=unique(subset(myData,select=c("CUENCA","ESTACION")))
+                                 for(i in seq(1,nrow(CUEST))){serie=subset(myData,CUENCA== CUEST[i,1] & ESTACION ==CUEST[i,2])
+                                 #generando reportes
+                                 write.table(serie,quote=FALSE,file=paste("separados","CUENCA",CUEST[i,1],"ESTACION",CUEST[i,2],".txt",sep="_"))
+                                 }
+                                 }
+
+
+```
+
+
+Esta función permite extraer algunos archivos despues de leer files= dir(). Ustede debe de proveer el indice inicial (ini) y el índice final (fin) del prefijo en común de los arhicov que quiere extraer. "typeOfFile"" es para definir el tipo de archivo (.txt,.pdf) que se quiere usar
+
+
+
+
+```
+selectSomeFiles<-function(files,init,fin,prefix,typeOfFile){
+
+  e=substr(files,init,fin)
+  prefix=as.character(prefix)
+  typeOfFile=as.character(typeOfFile)
+  index=NULL
+  subfiles=NULL
+  for(i in seq(1,length(e))){if(e[i]==prefix){index=append(index,i)}}
+  subfiles=files[index]
+  ii=grep(typeOfFile,subfiles)
+  subfiles=subfiles[ii]
+  return(subfiles)}
+```
+
+
+
+```
+completar_ejeTemporal<- function(files,timeSpan_hours,starting_date,saveHere) {
+  estadAll=NULL
+  for (i in seq(1,length(files))){
+    parMet=strsplit(files[i],"_.txt")
+    est=parMet[[1]][1]#Identificacion de la localizacion de la estacion utilizada
+    dat=read.table(files[i],header=T)
+    #correccion cambio de día a 00:00 horas. La hora pasa de ser 24:ooh a 00.00h, además,
+    #el cambio de día se da ahora a las 00:00h, en lugar de las 00:00 h, como ocurre con los datos del SEMA
+    j=which(dat$HORA==24);dat$HORA[j]=00;dat$DIA[j]=dat$DIA[j+1];dat$MES[j]=dat$MES[j+1];dat$AGNO[j]=dat$AGNO[j+1]
+    # con esto los convierto a datos horarios con muestreos a los cero minutos
+    timeAxis=as.Date(starting_date)+hours(1:timeSpan_hours)
+    cascaron=as.data.frame(cbind(AGNO=year(timeAxis),DIA=day(timeAxis),MES=month(timeAxis),HORA=hour(timeAxis)))
+    datMerged=merge(cascaron,dat,by=c("HORA","DIA","MES","AGNO"),all.x=TRUE)
+    datMerged=ordering(datMerged)
+    #datMerged$redond=NULL
+    r=which(is.na(datMerged$CUENCA));datMerged$CUENCA[r]=max(datMerged$CUENCA,na.rm=TRUE)
+    r=which(is.na(datMerged$ESTACION));datMerged$ESTACION[r]=max(datMerged$ESTACION,na.rm=TRUE)
+    datMerged$IA=-9;datMerged$IE=0
+    print("DIMENSIONES DE DATOS CON EJES DE TIEMPO");print(dim(datMerged))
+    write.table(datMerged, file=paste(saveHere,"_",est,".txt",sep=""),row.names = F,col.names=T)
+    x=na.omit(datMerged)
+    estad=cbind(fileName=files[1],est,Init_RealData=as.character(x$redond[1]),Final_RealData=as.character(max(x$redond)),nrows_RealData=nrow(x),ncols_RealData=ncol(x),Init_CompleteAxis=as.character(datMerged$redond[1]),Fin_CompleteAxis=as.character(max(datMerged$redond)),nrows_CompleteAxis=nrow(datMerged),ncols_CompleteAxis=ncol(datMerged))
+    estadAll=rbind(estadAll,estad)
+  }
+  estadAll= estadAll
+}
+```
+codDatoFaltante: el numero usando como representación del dato faltante en el<br/>
+
+datos: vector columna al cual se va a reemplazar por NA los datos codificados como faltantes<br/>
+
+
+```
+datosFaltantes <- function(codDatoFaltante,datos) {
+
+  i<-which(datos==codDatoFaltante)
+  datos<-replace(datos,i,NA) 
+  datos<-datos
+}
+```
+
+ 
+Esta función permite reemplazar los valores extremos de una columna de datos. El significado de los argumentos de entrada es el siguiente:<br/>
+
+  datos:   un data frame o columna de datos al que se ledesean sustitiuir ciertos valores<br/> 
+  infe: valor inferior<br/>
+  Supe: valor superior<br/>
+  SustVal: Valor por el que sustituyen los valores erroneos.<br/>
+  rango: expresa el rango de valores que se va a sustituir.<br/>
+  La opción 1 elimina valores fuera de ambos valores límites,la opción 2 elimina los valores por encima del límite superioringresado. La opción 3 elimina los valores inferiores al valor inferior ingresado. La opción 4 elimina los valores iguales a los valores inferiores o superiores (ambos debens e iguales)
+
+
+```
+eliminar2<- function(datos,Infe,Supe,SustVal,rango) {
+
+  Infe<-as.numeric(Infe);SustVal<-as.numeric(SustVal)
+  if (rango==1) {
+    i=which(datos > Supe);datos<-replace(datos,i,SustVal)
+    i=which(datos < Infe);datos<-replace(datos,i,SustVal) }
+  else if (rango==2) {
+    i=which(datos > Supe);datos<-replace(datos,i,SustVal) }
+  else if (rango==3) {
+    i=which(datos < Infe);datos<-replace(datos,i,SustVal) }
+  else if (rango==4) {
+    Supe<-Infe
+    i=which(datos == Infe);datos<-replace(datos,i,SustVal)}
+  
+}
+```
+
+
+Función para ingresar lineas de caracteres desde la consola. Convierte entrada a línea de caracteres:
+
+
+```
+ingresar<- function(comentario) {
+
+  print("=======================================")
+  comentario<-as.character(comentario)
+  print(comentario)
+  lineaCaracteres<-scan(n=1,what="character")
+  
+}
+```
+
+  Esta función ha sido desarrollada para eliminar los datos con un porcentaje de datos faltantes no admisible<br/>
+
+  nota: se asume que  ,dato,totSinNA y totDat tienen las mismas dimensiones m*1<br/>
+  codDatoFaltante: el numero usando como representación del dato faltante en el<br/>
+  dato: columna con los datos<br/>
+  datos: vector columna al cual se va a reemplazar por NA los datos codificados <br/>
+  totSinNA: el total de datos que no tienen NA (que existen)<br/>
+  totDat: el total de datos que debe de haber si no hay faltantes<br/>
+  porc: porcentaje umbral debajo del cual no se despliega el dato<br/>
+
+```
+elimPorcNanes <- function(datos,totSinNA,totDat,porc) {
+
+  porcentajeNanes<- (totSinNA/totDat) * 100
+  
+  i<-which(porcentajeNanes<=porc)
+  datos<-replace(datos,i,NA) 
+  datos<-datos
+}
+```
+
+
+
+
+```
+Mode <- function(x, na.rm = FALSE) {
+  if(na.rm){ x = subset(x, !is.na(x))}
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+```
+
+
+Propósito de esta función: reordenar los archivos horariosde estaciones mećanicas en el orden en que los lee la aplicación para completarles el eje de tiempo<br/>
+
+archivo: archivo que se va a reordenar<br/>
+encabIni: encabezados iniciales de los archivos que se van a ordenar<br/>
+
+
+```
+reordenar <- function(archivo,encabIni) {
+
+  datos<-read.table(archivo,sep="",fill=TRUE,blank.lines.skip=TRUE,header=TRUE)
+  datos<-as.data.frame(cbind(datos$DIA,datos$MES,datos$AGNO,datos$CUENCA,datos$ESTACION,datos$HORA,datos$DATOS))
+  #names(datos)<-c("dia","mes","agno","cuenca","estacion","hora","parametro")
+  write.table(datos,quote=FALSE,file=paste("reord.",archivo), col.names = FALSE, row.names = FALSE,na = "-9") 
+}
+```
+
+  
+  archivo: archivo al que se le calculará el reporte<br/>
+  resol: resolución del reporte: "month", "day"<br/>
+  reso: resolución de los datos originales<br/>
+  ruta: ruta del directorio donde se almacenan los resultados<br/>
+  calculo: "promedio", "total"  o   "moda"  según corresponda<br/>
+  encab: encabezado de los datos<br/>
+  prefijo: un prefijo identificador del archivo, para saber que es<br/>
+  tipoRep: "todo" y se imprimen todas las columnas. resumido" y se imprimen solo una parte<br/>
+
+
+
+```
+reporte <- function(archivo,reso,resol,ruta,calculo,prefijo,diviHora,tipoRep) {
+
+  #datos<-read.table(archivo,sep="",fill=TRUE,blank.lines.skip=TRUE,header=T)
+  datos<-read.table(archivo,sep="",fill=TRUE,blank.lines.skip=TRUE,header=T,row.names=NULL)
+  #names(datos)<-encab
+  
+  datos$DATOS<-datosFaltantes(-9,datos$DATOS)
+  #datos$DATOS<- eliminar2(datos$DATOS,0,0,NA,4)
+  
+  
+  #plot(datos$DATOS,type="l",pch=19,col="red",cex=0.5,xlab="Contador",ylab="magnitud")
+  #title(paste("Valores Horarios",archivo,sep="  "))
+  
+  
+  if(tolower(calculo)=="moda"){datos$DATOS=datosFaltantes(-9,datos$DIR)   }
+  datos$HORA<-datos$HORA/diviHora  #en automaticas hora va de 100 a 2400
+  
+  #Procedo a ordenar por fechas crecientes:
+  datosFechas<-paste(as.character(datos$AGNO),"-",as.character(datos$MES),"-",as.character(datos$DIA),"-",as.character(datos$HORA),"-00-00")
+  datosFechas <- ymd_hms(datosFechas)
+  
+  
+  redond<-floor_date(datosFechas,reso)
+  datos<-data.frame(cbind(redond,datos))
+  datos<- datos[order(datos$redond),]
+  datos$redond<-floor_date(datos$redond,resol)
+  #write.table(datos,quote=FALSE,file=paste(ruta,calculo,"datosOrdenados",archivo), col.names = TRUE, row.names = FALSE) 
+  if(tolower(calculo)=="promedio"){ reporteDia<-ddply(datos,"redond", summarise,CUENCA = max(CUENCA,na.rm = TRUE),ESTACION = max(ESTACION,na.rm = TRUE),DATOS2 = mean(DATOS,na.rm = TRUE),MAX = max(DATOS,na.rm = TRUE),MIN = min(DATOS,na.rm = TRUE),TotDatSinNA  =length(na.omit(DATOS)),TotDat =length(DATOS),.progress="text") }
+  if(tolower(calculo)=="total")   { reporteDia<-ddply(datos,"redond", summarise, CUENCA = max(CUENCA,na.rm = TRUE),ESTACION = max(ESTACION,na.rm = TRUE),DATOS2 = sum(DATOS,na.rm = TRUE) , TotDatSinNA =length(na.omit(DATOS)),TotDat =length(DATOS),.progress="text") }
+  if(tolower(calculo)=="moda")    { reporteDia<-ddply(datos,"redond", summarise, DATOS2 = Mode(DIR,na.rm = FALSE),.progress = "text")   }    
+  reporteDia$DATOS3<- elimPorcNanes(reporteDia$DATOS2,reporteDia$TotDatSinNA,reporteDia$TotDat,70) 
+  if(tolower(tipoRep)=="resumido")   { reporteDia=subset(reporteDia,select=c("redond","CUENCA","ESTACION","DATOS3")) }
+  write.table(reporteDia,quote=FALSE,file=paste(ruta,calculo,prefijo,archivo,sep="-"), col.names = TRUE, row.names = FALSE) 
+  
+  #plot(reporteDia$DATOS3,type="l",pch=19,col="red",cex=0.5,xlab="Contador",ylab="magnitud")
+  #title(archivo)
+  print(head(reporteDia))
+  reporteDia<-reporteDia
+}
+```
+
+función para generar reportes diarios<br/> 
+opcion= 1,2,etc<br/>
+rutaDia <-"../resultadosDay/"<br/>
+prefijoDia=c("tempAutoWeek-","HRAutoWeek-","lluvAutoWeek-")<br/>
+resol<-"day";diviHora<-1<br/>
+Calculo= "promedio"<br/>
+
+
+
+```
+reportesD_Q_M_Y<- function(lista,opcion,reso,resol,guardeEn,Calculo,prefijoDia,tipoRep) {
+
+  opcion=as.numeric(opcion)
+  diviHora=1
+  for(j in 1:length(prefijoDia)){
+    for (i in 1:length(lista)) {rep <-reporte(lista[i],reso,resol,guardeEn,Calculo,prefijoDia,diviHora,tipoRep)  }    }
+                                              
+  
+}
+```
+ 
+ruta: ruta donde se ubica el archivo<br/>
+files: la lista de archivos a cargar<br/>
+colExtract: la columna a extraer de cada archivo<br/>
+
+
+```
+MegaMatrix<- function(ruta,files,colExtract) {
+
+                                   datosAll=NULL;headerAll=NULL
+                                   for (i in seq(1,length(files))){datos<-read.table(files[i],header=TRUE,row.names=NULL)
+                                                                   print(files[i])
+                                                                   h=paste("h",max(datos$CUENCA),max(datos$ESTACION),sep="_")
+                                                                   headerAll=append(headerAll,h)
+                                                                   datosAll=cbind(datosAll,datos[,colExtract])   }
+
+datosAll=as.data.frame(round(datosAll,2))
+names(datosAll)=headerAll
+datosAll=datosAll
+#datosAll=cbind(date=datos$redond,datosAll)
+}
+```
+
+
+
+
+
+```
+filasSinDato <- function(MATRIZ_ACPP) {
+  #MATRIZ_ACPP: matriz m*n que contiene los datos del conjunto de estaciones
+  #meteorologicas automaticas que se va a rellenar
+  colExtra<-as.matrix(c(1:nrow(MATRIZ_ACPP))) * NA
+  MATRIZCOMPLETA2<-cbind(MATRIZ_ACPP,colExtra)
+  numCol<-ncol(MATRIZ_ACPP)
+  for (i in 2:nrow(MATRIZ_ACPP)) {
+    MATRIZCOMPLETA2[i,numCol+1]<-sum(is.na(MATRIZ_ACPP[i,])*1)     }
+  MATRIZCOMPLETA2<-MATRIZCOMPLETA2
+}
+```
+
+
+  | estación  |    longitud   |  latitud|
+   |----------|:-----------:|------:|
+  | PASH        |  -166.08900 | 66.24940
+  | PAVL         | -164.56400 | 67.73610
+  | PAWI         | -159.99500 | 70.63810
+
+
+```
+CalcDists <- function(latlongs) {#The input file has to look like this:
+
+  name <- list(rownames(latlongs), rownames(latlongs))
+  n <- nrow(latlongs)
+  z <- matrix(0, n, n, dimnames = name)
+  for (i in 1:n) { for (j in 1:n) {z[i, j] <- rdist.earth.vec(latlongs[i,],latlongs[j,],miles = FALSE)}}
+  return(z)
+}
+```
+
+
+
+  La función groups_reports también genera un reporte general del número de estaciones por grupo<br/>
+  dist_m:distance matrix<br/>
+  radio_km: maximum radius in Km<br/>
+  n_min: Minimum number of stations per group<br/>
+
+```
+groups_reports <- function(dist_m,radio_km,n_min){#This function generates groups of stations based on the distance matrix
+
+  report_distance_files=NULL
+  report_distance_files_all=NULL
+  for(i in seq(1,ncol(dist_m))){e=sort(dist_m[,i]);e=as.data.frame(e)
+  ee=subset(e,e<radio_km);names(ee)="distance_km";print(ee)
+  report_distance_files=cbind(nameFile=rownames(ee)[1],radio_km,n_stations=as.numeric(nrow(ee)))
+  report_distance_files_all=rbind(report_distance_files_all,report_distance_files)
+  if(nrow(ee)>n_min){ write.table(ee, file=paste("closeStat_r=",radio_km,"_",rownames(ee)[1],".txt",sep=""),row.names = T,col.names=T)}
+  }
+  write.table(report_distance_files_all, file=paste("report_distance_files_all_",radio_km,".txt",sep=""),row.names = F, col.names=T)
+  report_distance_files_all=unique(report_distance_files_all)
+}
+```
+
+
+
+Esta función permite crear vectores de retardo<br/>
+x: el vector numérico en su forma original<br/>
+k: Indice hacia adelante y hacia atrás.  k>0 or k<0<br/>
+
+```
+lagpad <- function(x, k) { 
+  if(k>0){x=c(rep(NA, k), x)[1 : length(x)] }
+  if(k<0){x=c(x,rep(NA, abs(k)))[(abs(k)+1) : (length(x)+abs(k))] } 
+  x=x }
+
+```
+
+
+
+```
+LagCorMatrix<-function(m,beg,fin){
+  namesM=names(m)
+  #m=as.matrix(m)
+  mLagged=NULL
+  mLaggedAll=NULL
+  for (j in seq(1,ncol(m))){
+    for(jj in seq(beg,fin)){
+      mLagged=lagpad(m[,j],jj)
+      mLaggedAll=as.data.frame(cbind(mLaggedAll,mLagged) )
+      names(mLaggedAll)[ncol(mLaggedAll)]=paste(namesM[j],"_",jj,sep="")
+    }} 
+  mLaggedAll[(fin+abs(beg)+1):(nrow(mLaggedAll)-fin-1),] #eliminando colas de NA
+  mLaggedAll=mLaggedAll}
+
+```
+nest: número de series temporales<br/>
+ini: Número absoluto de horas hacia adelante y hacia atrás<br/>
+
+
+```
+ind_00<-function(nest,ini){
+  ss=NULL
+  for (i in seq(1,nest)){s=(2*i-1)*abs(ini)+i;ss=append(ss,s)}
+  ss=ss}
+  
+``` 
+La siguiente función permite calcular el número de datos faltantes por columnas<br/>
+M: data frame con NA como código de dato faltante<br/> 
+  
+```
+missingDataPercCols <- function(M) {
+  results=colSums(is.na(M)*1)/nrow(M) *100
+  results=results }
+  
+```
+La siguiente función permite calcular el número de datos faltantes por filas<br/>
+M: data frame con NA como código de dato faltante <br/>
+  
+```
+missingDataPercRows <- function(M) {
+  results=rowSums(is.na(M)*1)/ncol(M) *100
+  results=results }
+``` 
+  
+  
+
+Esta función permite cortar horizontal y verticalmente la matrizde datos. El periodo de analisis inicia con la primera y ultima fila con al menos un dato, asi como con aquellas series temporales con menos de un 30% de datos faltantes<br/>
+
+  DESCRIPCION DE ARGUMENTOS:<br/>
+  #=========================<br/>
+  fechas: fechas asignadas a la matriz de datos. Sus dimensiones cambian también<br/>
+  dat: datos con series de tiempo por columnas y periodos comunes<br/> 
+  percFila: porcentaje de datos por fila que debe de haber<br/>
+  percCol: porcentaje de datos por columnas tolerable<br/>
+ 
+  
+```
+acotandoDatos<- function(fechas,dat,percFila,percCol) {
+
+  #Se toma como matriz valida la primera con al menos un dato en la fila y la ultima con al menos un dato en la fila:
+  percMissRows=missingDataPercRows(dat)
+  q=which(percMissRows<percFila) 
+  corte_ini=q[1];corte_fin=q[length(q)]
+  dat2=dat[corte_ini:corte_fin,]
+  fechas2=fechas[corte_ini:corte_fin,]
+  percMissCols=missingDataPercCols(dat)
+  qq=which(percMissCols>percCol) #se localiza las columnas con % de datos faltantes superiores al umbral 
+  dat3=dat2[,-qq]
+  dat3=as.data.frame(cbind(fechas2,dat3))
+  dat3=dat3
+}
+```
+
+
+Esta función permite sacar una matriz de diferencias
+
+```
+diffMatrix<- function(matrix) {
+  matrix=as.data.frame(matrix)
+  diffAll=NULL
+  for(j in seq(1,ncol(matrix))){diffAll=cbind(diffAll,diff(matrix[,j]))}
+  diffAll=as.data.frame(diffAll)
+  names(diffAll)=names(matrix)
+  diffAll=diffAll
+}
+```
+Generando los las cotas extremas de una distribución usando los límites de un gráfico de cajas y bigotes
+datos: fila de datos a la que se le va a sacar los limites<br/>
+
+```
+limitQuantiles<- function(datos) {
+
+  datos=na.omit(datos)
+  q=quantile(datos, c(.25, .5, .75))
+  IQR=q[3]-q[1]
+  upper=q[3]+3/2*IQR
+  lower=q[1]-3/2*IQR
+  upperSd=q[3]+3*IQR
+  lowerSd=q[1]-3*IQR
+  result=as.data.frame(cbind(q1=q[1],q2=q[2],q3=q[3],IQR,lower,upper,lowerSd,upperSd,mini=min(datos,na.rm=T),maxi=max(datos,na.rm=T)  ))
+  result=result
+} 
+```
+Función para generar algunos gráficos...<br/>
+a: matriz de datos sin rellenar<br/>
+b: matriz de datos rellenada<br/>
+nombre_ejeY: caracter para titulo de la abscisa<br/>
+
+```
+comparison_plots<-function(a,b,nombre_ejeY){
+
+  for (j in 1:ncol(a)) {vector<-cbind(a[,j],b[,j])
+  plot(vector[,2],type="l",pch=19,col="green",cex=0.5,xlab="Contador",ylab=nombre_ejeY)
+  title("Gráficos de rellenados y originales",cex.main = 1,font.main= 3, col.main= "blue",cex.sub = 0.75, font.sub = 2, col.sub = "red")
+  points(vector[,2],col="red",pch=19, cex = 0.1)
+  points(vector[,1],col="blue",pch=19, cex = 0.1)    }
+}
+```
+
+
+
+```
+plottingFilledData<-function(extension,notFilledData,filledData,tipoImagen){
+  notFilledData=as.matrix(notFilledData)
+  filledData=as.matrix(filledData)
+  if(tipoImagen=="png"){png(as.character(extension))}
+  if(tipoImagen=="pdf"){pdf(as.character(extension))}
+  if(ncol(filledData)>1){par(mfrow = c(2,1))}
+  for (j in 1:ncol(notFilledData)) {
+    vector<-cbind(notFilledData[,j],filledData[,j])
+    vector2<-vector 
+    plot(vector[,2],type="l",pch=19,col="green",cex=0.5,xlab=paste("Index",sep=""),ylab="level")
+    title(colnames(notFilledData)[j],cex.main = 1,font.main= 3, col.main= "blue",
+          cex.sub = 0.75, font.sub = 2, col.sub = "red")
+    points(vector[,2],col="green",pch=19, cex = 0.4)
+    points(vector[,1],col="blue",pch=19, cex = 0.1)
+    legend("bottomright",c("Datos rellenados","Datos originales"),lty=c(1,1),lwd=c(1,1),col=c("green","blue"),horiz=TRUE,cex=0.3)
+  }
+  
+  dev.off()
+  
+}
+
+```
+
+
+```
+remove_mv_outliers<-function(dat,mv,code_IA){#This functions removes -9 and outliers for a data matrix or data frame
+  #dat: matrix or data frame with columnwise data
+  #mv: mising value code
+  for (j in seq(1,ncol(dat))){ j_menosNueve=which(dat[,j]==mv);dat[j_menosNueve,j]=NA}
+  #Eliminando valores atipicos:
+  dat_IA=dat*0
+  for (j in seq(1,ncol(dat))){ qq=limitQuantiles(dat[,j])
+  j_upper=which(dat[,j]>qq$upperSd) 
+  j_lower=which(dat[,j]<qq$lowerSd)
+  j_both=append(j_upper,j_lower)
+  dat[j_both,j]=NA
+  dat_IA[j_both,j]=code_IA
+  }
+  output=list(dat,dat_IA)
+  
+}
+
+```
+
+Función para normalizar datos
+```
+normalization.fun = function(x,option){ norm=(x - min(x,na.rm=TRUE))/(max(x,na.rm=TRUE) - min(x,na.rm=TRUE)) }
+```
+
+Removiendo los datos atípicos...
+
+
+```
+remove_mv_outliers_group<-function(dat,dat_IA,code_IA){#This functions removes -9 and outliers for a data matrix or data frame
+  #dat: matrix or data frame with columnwise data
+  #dat_IA:  matriz de IA
+  #code_IA:flag
+  x=as.matrix(dat);
+  x=na.omit(as.vector(x))
+  x=scale(x,scale=TRUE)
+  dat_scaled=scale(dat,scale=TRUE)
+  qqq=limitQuantiles(x)
+  quantiles_despues=rbind(quantiles_despues,qqq)
+  for (j in seq(1,ncol(dat))){ j_upper=which(dat_scaled[,j]>qqq$upper) 
+  j_lower=which(dat_scaled[,j]<qqq$lower) 
+  j_both=append(j_upper,j_lower)
+  dat[j_both,j]=NA
+  dat_IA[j_both,j]=code_IA
+  }
+  output=list(dat,dat_IA)   
+  
+}
+
+```
+
+Explicación de parámetros de una función:<br/>
+
+dat: datos con estacion de referencia en primera columna<br/>
+cor_umbral: Umbral de correlación seleccionado<br/>
+metodo = c("pearson", "kendall", "spearman")<br/>
+dif: calcular la correlación con las diferencias en vez de con los datos ("si" o "no") en la salida:<br/>
+corCru: matriz de correlación cruzada<br/>
+corParAll: secuencia de correlaciones parciales<br/>
+
+
+
+```
+corCruPar<-function(dat,cor_umbral,metodo,dif){ 
+  metodo=as.character(metodo)
+  #for(j in seq(1,ncol(dat))){i=which(is.na(dat[,j]));dat[i,j]=mean(dat[,j],na.rm=TRUE)}
+  dat_backUp=dat
+  dat=na.omit(dat) #calculo diferencias con los datos que hay
+  if(dif=="si"){dat=diffMatrix(dat)}
+  corCru=cor(dat,method=metodo)
+  corParAll=NULL
+  for(j in seq(1,(ncol(dat)))){s=na.omit(cbind(dat[,1],dat[,j])); corPar=cor(s[,1],s[,2],method=metodo) ;corParAll=append(corParAll,corPar)}
+  names(corParAll)=names(dat)
+  corParAll=sort(corParAll,decreasing=TRUE)
+  dat2=dat_backUp[,which(corParAll>cor_umbral)]  #los datos filtrados por correlación umbral
+  output=list(corCru,corParAll,dat2) 
+}
+```
+
+
+
+```
+LagCorMatrix<-function(m,beg,fin){
+  namesM=names(m)
+  #m=as.matrix(m)
+  mLagged=NULL
+  mLaggedAll=NULL
+  for (j in seq(1,ncol(m))){
+    for(jj in seq(beg,fin)){
+      mLagged=lagpad(m[,j],jj)
+      mLaggedAll=as.data.frame(cbind(mLaggedAll,mLagged) )
+      names(mLaggedAll)[ncol(mLaggedAll)]=paste(namesM[j],"_",jj,sep="")
+    }} 
+  mLaggedAll[(fin+abs(beg)+1):(nrow(mLaggedAll)-fin-1),] #eliminando colas de NA
+  mLaggedAll=mLaggedAll}
+```
