@@ -1,9 +1,11 @@
 ---
-title: "Ejemplo de relleno usando ePCA"
+title: "Procesamiento de datos previo al relleno"
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,encoding=encoding,
  output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+author: "Jose Luis Araya, PhD"
+date: "December 19, 2019"
 output:
   html_document: default
 #  pdf_document: default
@@ -12,10 +14,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+#TUTORIAL 2
 
-## Departamento de Redes y Procesamiento de Datos 
-##Instituto Meteorológico Nacional 
-##Dr. José Luis Araya López
 Este tutorial describe cómo debe de usarse el código para procesar los datos en su totalidad y obtener productos
 de datos rellenados usando el algoritmo ePCA. Para esta primera parte se describe el procesamiento de los datos originales,
 selección de variables y grupos de estaciones y controles de calidad generales. El código para relleno será tratado en otro
@@ -280,9 +280,9 @@ seriesEnNomina=seriesNomina[na.omit(match(seriesNomina,seriesActuales))] #las es
 seriesNO_nomina=seriesActuales[which(is.na(match(seriesActuales,seriesNomina)))]  #las estaciones de la megamatriz que No están en la nómina
 ```
 ¿cuales grupos coinciden con los datos que se van a analizar?
-
-```
 Los grupos que corresponden con las columnas del archivo "data" o "series actuales"
+```
+
 grupos_en_seriesActuales=seriesActuales[na.omit(match(seriesGrupos,seriesActuales))]
 ```
 
@@ -423,7 +423,7 @@ write.table(sanegAll,quote=FALSE,file="estacionesNoRellenablesUsandoEstacionesCe
 ```
 
 
-Relleno de datos
+Por ahora terminamos con esta parte del procesamiento. 
 
 
 
