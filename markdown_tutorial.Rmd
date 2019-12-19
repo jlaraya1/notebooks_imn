@@ -16,9 +16,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Departamento de Redes y Procesamiento de Datos 
 ##Instituto Meteorológico Nacional 
 ##Dr. José Luis Araya López
-
-Este tutorial es una descripción de cómo debe de usarse el código para procesar los datos en su totalidad y obtener productos
-de datos rellenados usando el algoritmo ePCA
+Este tutorial describe cómo debe de usarse el código para procesar los datos en su totalidad y obtener productos
+de datos rellenados usando el algoritmo ePCA. Para esta primera parte se describe el procesamiento de los datos originales,
+selección de variables y grupos de estaciones y controles de calidad generales. El código para relleno será tratado en otro
+tutorial.
  
 
 ```
